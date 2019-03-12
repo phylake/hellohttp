@@ -13,6 +13,16 @@ import (
 var random string
 
 func PongHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("")
+	fmt.Println("Proto", r.Proto)
+	fmt.Println("TransferEncoding", r.TransferEncoding)
+	fmt.Println("Close", r.Close)
+	fmt.Println("Host", r.Host)
+	fmt.Println("RemoteAddr", r.RemoteAddr)
+	for k, v := range r.Header {
+		fmt.Println("Header", k, v)
+	}
+
 	w.Header().Set("X-HelloHttp-Instance", random)
 	w.Write([]byte("PONG"))
 }
