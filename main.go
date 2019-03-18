@@ -13,6 +13,11 @@ import (
 var random string
 
 func PongHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	w.Write([]byte("PONG"))
+}
+
+func LogRequestHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("")
 	fmt.Println("Proto", r.Proto)
 	fmt.Println("TransferEncoding", r.TransferEncoding)
@@ -58,6 +63,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", PongHandler)
+	http.HandleFunc("/log", LogRequestHandler)
 	http.HandleFunc("/req", ClientHandler)
 
 	fmt.Println("listening on 3000")
