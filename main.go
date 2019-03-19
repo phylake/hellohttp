@@ -68,9 +68,11 @@ func SizeHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("strconv.Atoi failed"))
 	}
 
+	bs := make([]byte, byteSize)
 	for i := 0; i < byteSize; i++ {
-		w.Write([]byte{byte(97 + i%26)})
+		bs[i] = byte(97 + i%26)
 	}
+	w.Write(bs)
 }
 
 func DurationHandler(w http.ResponseWriter, r *http.Request) {
