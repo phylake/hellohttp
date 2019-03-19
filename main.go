@@ -8,6 +8,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
+	"time"
 )
 
 var random string
@@ -51,6 +53,44 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	httputil.NewSingleHostReverseProxy(u).ServeHTTP(w, r)
 }
 
+func SizeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+
+	byteSizeStr := r.URL.Query().Get("byte_size")
+	if byteSizeStr == "" {
+		w.WriteHeader(400)
+		w.Write([]byte("missing byte_size query var"))
+	}
+
+	byteSize, err := strconv.Atoi(byteSizeStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("strconv.Atoi failed"))
+	}
+
+	for i := 0; i < byteSize; i++ {
+		w.Write([]byte{byte(97 + i%26)})
+	}
+}
+
+func DurationHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+
+	durationStr := r.URL.Query().Get("duration")
+	if durationStr == "" {
+		w.WriteHeader(400)
+		w.Write([]byte("missing duration query var"))
+	}
+
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("time.ParseDuration failed"))
+	}
+
+	time.Sleep(duration)
+}
+
 func init() {
 	bs := make([]byte, 4)
 	rand.Read(bs)
@@ -64,7 +104,9 @@ func main() {
 
 	http.HandleFunc("/", PongHandler)
 	http.HandleFunc("/log", LogRequestHandler)
-	http.HandleFunc("/req", ClientHandler)
+	http.HandleFunc("/client", ClientHandler)
+	http.HandleFunc("/size", SizeHandler)
+	http.HandleFunc("/duration", DurationHandler)
 
 	fmt.Println("listening on 3000")
 	http.ListenAndServe(":3000", nil)
