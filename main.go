@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -15,7 +16,14 @@ import (
 var random string
 
 func PongHandler(w http.ResponseWriter, r *http.Request) {
+	bs, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
 	w.Header().Set("X-HelloHttp-Instance", random)
+	w.Header().Set("X-HelloHttp-Req-Body-Length", strconv.Itoa(len(bs)))
 	w.Write([]byte("PONG"))
 }
 
