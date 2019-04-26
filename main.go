@@ -83,7 +83,7 @@ func SizeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(bs)
 }
 
-func DurationHandler(w http.ResponseWriter, r *http.Request) {
+func DelayHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 
 	durationStr := r.URL.Query().Get("duration")
@@ -116,7 +116,7 @@ func main() {
 	http.HandleFunc("/log", LogRequestHandler)
 	http.HandleFunc("/client", ClientHandler)
 	http.HandleFunc("/size", SizeHandler)
-	http.HandleFunc("/duration", DurationHandler)
+	http.HandleFunc("/delay", DelayHandler)
 
 	fmt.Println("listening on 3000")
 	http.ListenAndServe(":3000", nil)
