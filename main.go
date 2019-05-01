@@ -112,12 +112,21 @@ func main() {
 		fmt.Println(env)
 	}
 
-	http.HandleFunc("/", PongHandler)
-	http.HandleFunc("/log", LogRequestHandler)
-	http.HandleFunc("/client", ClientHandler)
-	http.HandleFunc("/size", SizeHandler)
-	http.HandleFunc("/delay", DelayHandler)
+	server := &http.Server{
+		Addr: ":3000",
+	}
+
+	if d, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT")); err != nil {
+		server.IdleTimeout = d
+	}
+
+	http.DefaultServeMux.HandleFunc("/", PongHandler)
+	http.DefaultServeMux.HandleFunc("/ping", PongHandler)
+	http.DefaultServeMux.HandleFunc("/log", LogRequestHandler)
+	http.DefaultServeMux.HandleFunc("/client", ClientHandler)
+	http.DefaultServeMux.HandleFunc("/size", SizeHandler)
+	http.DefaultServeMux.HandleFunc("/delay", DelayHandler)
 
 	fmt.Println("listening on 3000")
-	http.ListenAndServe(":3000", nil)
+	server.ListenAndServe()
 }
