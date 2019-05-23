@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -101,6 +102,30 @@ func DelayHandler(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(duration)
 }
 
+func ExfilHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	filename := r.Header.Get("X-Filename")
+	if filename == "" {
+		w.WriteHeader(400)
+		return
+	}
+
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		fmt.Println("os.OpenFile", err)
+		w.WriteHeader(500)
+		return
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, r.Body)
+	if err != nil {
+		fmt.Println("os.OpenFile", err)
+		w.WriteHeader(500)
+		return
+	}
+}
+
 func init() {
 	bs := make([]byte, 4)
 	rand.Read(bs)
@@ -112,8 +137,13 @@ func main() {
 		fmt.Println(env)
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
 	server := &http.Server{
-		Addr: ":3000",
+		Addr: ":" + port,
 	}
 
 	if d, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT")); err != nil {
@@ -126,7 +156,8 @@ func main() {
 	http.DefaultServeMux.HandleFunc("/client", ClientHandler)
 	http.DefaultServeMux.HandleFunc("/size", SizeHandler)
 	http.DefaultServeMux.HandleFunc("/delay", DelayHandler)
+	http.DefaultServeMux.HandleFunc("/exfil", ExfilHandler)
 
-	fmt.Println("listening on 3000")
+	fmt.Println("listening on", port)
 	server.ListenAndServe()
 }
