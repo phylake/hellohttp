@@ -126,6 +126,32 @@ func ExfilHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	w.WriteHeader(404)
+}
+
+var healthy bool = true
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	if healthy {
+		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(500)
+	}
+}
+
+func HealthPassHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	healthy = true
+}
+
+func HealthFailHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	healthy = false
+}
+
 func init() {
 	bs := make([]byte, 4)
 	rand.Read(bs)
@@ -157,6 +183,10 @@ func main() {
 	http.DefaultServeMux.HandleFunc("/size", SizeHandler)
 	http.DefaultServeMux.HandleFunc("/delay", DelayHandler)
 	http.DefaultServeMux.HandleFunc("/exfil", ExfilHandler)
+	http.DefaultServeMux.HandleFunc("/404", NotFoundHandler)
+	http.DefaultServeMux.HandleFunc("/health", HealthHandler)
+	http.DefaultServeMux.HandleFunc("/health/pass", HealthPassHandler)
+	http.DefaultServeMux.HandleFunc("/health/fail", HealthFailHandler)
 
 	fmt.Println("listening on", port)
 	server.ListenAndServe()
