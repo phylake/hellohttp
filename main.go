@@ -1,3 +1,30 @@
+// Copyright 2019 Brandon Cook
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors
+// may be used to endorse or promote products derived from this software without
+// specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
@@ -14,7 +41,10 @@ import (
 	"time"
 )
 
-var random string
+var (
+	random       string
+	sizeResponse []byte
+)
 
 func PongHandler(w http.ResponseWriter, r *http.Request) {
 	bs, err := ioutil.ReadAll(r.Body)
@@ -71,17 +101,21 @@ func SizeHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("missing byte_size query var"))
 	}
 
-	byteSize, err := strconv.Atoi(byteSizeStr)
-	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("strconv.Atoi failed"))
-	}
+	if byteSizeStr == os.Getenv("SIZE_RESPONSE_LEN") {
+		w.Write(sizeResponse)
+	} else {
+		byteSize, err := strconv.Atoi(byteSizeStr)
+		if err != nil {
+			w.WriteHeader(400)
+			w.Write([]byte("strconv.Atoi failed"))
+		}
 
-	bs := make([]byte, byteSize)
-	for i := 0; i < byteSize; i++ {
-		bs[i] = byte(97 + i%26)
+		bs := make([]byte, byteSize)
+		for i := 0; i < byteSize; i++ {
+			bs[i] = byte(97 + i%26)
+		}
+		w.Write(bs)
 	}
-	w.Write(bs)
 }
 
 func DelayHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,6 +190,13 @@ func init() {
 	bs := make([]byte, 4)
 	rand.Read(bs)
 	random = hex.EncodeToString(bs)
+
+	if byteSize, err := strconv.Atoi(os.Getenv("SIZE_RESPONSE_LEN")); err == nil {
+		sizeResponse = make([]byte, byteSize)
+		for i := 0; i < byteSize; i++ {
+			sizeResponse[i] = byte(97 + i%26)
+		}
+	}
 }
 
 func main() {
