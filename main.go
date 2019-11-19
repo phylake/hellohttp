@@ -73,6 +73,7 @@ func LogRequestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("PONG"))
 }
 
+// curl -H "X-Req-URL: http://example.com" localhost:3000/client
 func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	urlStr := r.Header.Get("X-Req-URL")
 	if urlStr == "" {
@@ -92,6 +93,7 @@ func ClientHandler(w http.ResponseWriter, r *http.Request) {
 	httputil.NewSingleHostReverseProxy(u).ServeHTTP(w, r)
 }
 
+// curl localhost:3000/size?byte_size=1024
 func SizeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 
@@ -118,6 +120,7 @@ func SizeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// curl localhost:3000/delay?duration=1m
 func DelayHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 
@@ -136,6 +139,7 @@ func DelayHandler(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(duration)
 }
 
+// curl -H "X-Filename: foo.bar" --data-binary @foo.bar localhost:3000/exfil
 func ExfilHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 	filename := r.Header.Get("X-Filename")
@@ -176,14 +180,97 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// curl localhost:3000/health/pass
 func HealthPassHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 	healthy = true
 }
 
+// curl localhost:3000/health/fail
 func HealthFailHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-HelloHttp-Instance", random)
 	healthy = false
+}
+
+// polls for 1 hour
+// iterations and sleep_duration are optional.
+// not setting them is equivalent to:
+// curl localhost:3000/longpoll?sleep_duration=30s&iterations=120
+func LongPollHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	f := w.(http.Flusher)
+
+	sleepDurationStr := r.URL.Query().Get("sleep_duration")
+	if sleepDurationStr == "" {
+		sleepDurationStr = "30s"
+	}
+
+	iterationsStr := r.URL.Query().Get("iterations")
+	if iterationsStr == "" {
+		iterationsStr = "120"
+	}
+
+	iterations, err := strconv.Atoi(iterationsStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	sleepDuration, err := time.ParseDuration(sleepDurationStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	for i := 0; i < iterations; i++ {
+		w.Write([]byte("not dead yet\n"))
+		f.Flush()
+		time.Sleep(sleepDuration)
+	}
+}
+
+// stream 1MiB of the alphabet by default
+// chunk_size and chunk_count are optional.
+// not setting them is equivalent to:
+// curl localhost:3000/stream?chunk_size=1024&chunk_count=1024
+func StreamHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-HelloHttp-Instance", random)
+	f := w.(http.Flusher)
+
+	chunkSizeStr := r.URL.Query().Get("chunk_size")
+	if chunkSizeStr == "" {
+		chunkSizeStr = "1024"
+	}
+
+	chunkCountStr := r.URL.Query().Get("chunk_count")
+	if chunkCountStr == "" {
+		chunkCountStr = "1024"
+	}
+
+	chunkCount, err := strconv.Atoi(chunkCountStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	chunkSize, err := strconv.Atoi(chunkSizeStr)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	for i := 0; i < chunkCount; i++ {
+		bs := make([]byte, chunkSize)
+		for i := 0; i < chunkSize; i++ {
+			bs[i] = byte(97 + i%26)
+		}
+		w.Write(bs)
+		f.Flush()
+	}
 }
 
 func init() {
@@ -228,6 +315,8 @@ func main() {
 	http.DefaultServeMux.HandleFunc("/health", HealthHandler)
 	http.DefaultServeMux.HandleFunc("/health/pass", HealthPassHandler)
 	http.DefaultServeMux.HandleFunc("/health/fail", HealthFailHandler)
+	http.DefaultServeMux.HandleFunc("/longpoll", LongPollHandler)
+	http.DefaultServeMux.HandleFunc("/stream", StreamHandler)
 
 	fmt.Println("listening on", port)
 	server.ListenAndServe()
