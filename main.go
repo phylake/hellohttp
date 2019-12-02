@@ -300,7 +300,7 @@ func main() {
 		Addr: ":" + port,
 	}
 
-	if d, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT")); err != nil {
+	if d, err := time.ParseDuration(os.Getenv("IDLE_TIMEOUT")); err == nil {
 		server.IdleTimeout = d
 	}
 
