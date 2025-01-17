@@ -128,12 +128,14 @@ func DelayHandler(w http.ResponseWriter, r *http.Request) {
 	if durationStr == "" {
 		w.WriteHeader(400)
 		w.Write([]byte("missing duration query var"))
+		return
 	}
 
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write([]byte("time.ParseDuration failed"))
+		return
 	}
 
 	time.Sleep(duration)
